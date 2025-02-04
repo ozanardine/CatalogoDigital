@@ -11,37 +11,18 @@ interface AuthTokens {
 }
 
 export const getAuthTokens = async (code: string): Promise<AuthTokens> => {
-  const response = await axios.post('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token', 
-    new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: import.meta.env.VITE_TINY_CLIENT_ID,
-      client_secret: import.meta.env.VITE_TINY_CLIENT_SECRET,
-      redirect_uri: import.meta.env.VITE_REDIRECT_URI,
-      code
-    }),
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }
-  );
+  const response = await axios.post('/.netlify/functions/tiny-auth', {
+    grant_type: 'authorization_code',
+    code
+  });
   return response.data;
 };
 
 export const refreshAccessToken = async (refreshToken: string): Promise<AuthTokens> => {
-  const response = await axios.post('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token',
-    new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: import.meta.env.VITE_TINY_CLIENT_ID,
-      client_secret: import.meta.env.VITE_TINY_CLIENT_SECRET,
-      refresh_token: refreshToken
-    }),
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }
-  );
+  const response = await axios.post('/.netlify/functions/tiny-auth', {
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken
+  });
   return response.data;
 };
 
