@@ -7,12 +7,28 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const hasImage = product.anexos && product.anexos.length > 0;
+  const mainImage = hasImage ? product.anexos[0].url : null;
+  const hasPromotionalPrice = product.precos.precoPromocional && product.precos.precoPromocional > 0;
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative h-48 overflow-hidden">
-        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-          <Package className="w-12 h-12 text-gray-400" />
-        </div>
+        {mainImage ? (
+          <img
+            src={mainImage}
+            alt={product.descricao}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUtcGFja2FnZSI+PHBhdGggZD0iTTEyIDN2MTgiLz48cGF0aCBkPSJNMyA2aDE4Ii8+PHBhdGggZD0iTTMgMTJoMTgiLz48cGF0aCBkPSJNMyAxOGgxOCIvPjwvc3ZnPg==';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <Package className="w-12 h-12 text-gray-400" />
+          </div>
+        )}
       </div>
       
       <div className="p-4">
@@ -25,12 +41,18 @@ export function ProductCard({ product }: ProductCardProps) {
         
         <div className="flex justify-between items-center mt-4">
           <div>
-            <p className="text-2xl font-bold text-green-600">
-              R$ {product.precos.preco.toFixed(2)}
-            </p>
-            {product.precos.precoPromocional > 0 && (
-              <p className="text-sm text-gray-500 line-through">
-                R$ {product.precos.precoPromocional.toFixed(2)}
+            {hasPromotionalPrice ? (
+              <>
+                <p className="text-2xl font-bold text-green-600">
+                  R$ {product.precos.precoPromocional.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-500 line-through">
+                  R$ {product.precos.preco.toFixed(2)}
+                </p>
+              </>
+            ) : (
+              <p className="text-2xl font-bold text-green-600">
+                R$ {product.precos.preco.toFixed(2)}
               </p>
             )}
           </div>

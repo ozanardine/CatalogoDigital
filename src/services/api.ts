@@ -40,20 +40,29 @@ export const fetchProducts = async (accessToken: string, params = {}) => {
       },
       params: {
         limit: 100,
-        situacao: 'A',  // Apenas produtos ativos
+        situacao: 'A',
         ...params
       }
     });
     
-    return response.data.itens.filter(product => product.situacao === 'A');
+    // Busca os detalhes de cada produto
+    const productsWithDetails = await Promise.all(
+      response.data.itens.map(async (product) => {
+        const details = await axios.get(`/.netlify/functions/tiny-product-details`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          },
+          params: {
+            id: product.id
+          }
+        });
+        return details.data;
+      })
+    );
+    
+    return productsWithDetails.filter(product => product.situacao === 'A');
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
   }
-};
-
-export default {
-  getAuthTokens,
-  refreshAccessToken,
-  fetchProducts
 };

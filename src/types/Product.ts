@@ -5,15 +5,19 @@ export interface ProductPrices {
   precoCustoMedio: number;
 }
 
+export interface ProductAttachment {
+  url: string;
+  externo: boolean;
+}
+
 export interface Product {
   id: number;
   sku: string;
   descricao: string;
   tipo: string;
   situacao: string;
-  dataCriacao: string;
-  dataAlteracao: string;
   unidade: string;
   gtin?: string;
   precos: ProductPrices;
+  anexos: ProductAttachment[];
 }
