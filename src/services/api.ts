@@ -1,9 +1,5 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'https://api.tiny.com.br/public-api/v3'
-});
-
 interface AuthTokens {
   access_token: string;
   refresh_token: string;
@@ -28,7 +24,7 @@ export const refreshAccessToken = async (refreshToken: string): Promise<AuthToke
 
 export const fetchProducts = async (accessToken: string, params = {}) => {
   try {
-    const response = await api.get('/produtos', {
+    const response = await axios.get('/.netlify/functions/tiny-products', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
@@ -44,4 +40,8 @@ export const fetchProducts = async (accessToken: string, params = {}) => {
   }
 };
 
-export default api;
+export default {
+  getAuthTokens,
+  refreshAccessToken,
+  fetchProducts
+};
