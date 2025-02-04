@@ -1,9 +1,19 @@
 import axios from 'axios';
+import { Product } from '../types/Product';
 
 interface AuthTokens {
   access_token: string;
   refresh_token: string;
   expires_in: number;
+}
+
+interface ProductsResponse {
+  itens: Product[];
+  paginacao: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
 }
 
 export const getAuthTokens = async (code: string): Promise<AuthTokens> => {
@@ -24,16 +34,18 @@ export const refreshAccessToken = async (refreshToken: string): Promise<AuthToke
 
 export const fetchProducts = async (accessToken: string, params = {}) => {
   try {
-    const response = await axios.get('/.netlify/functions/tiny-products', {
+    const response = await axios.get<ProductsResponse>('/.netlify/functions/tiny-products', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
       params: {
         limit: 100,
+        situacao: 'A',  // Apenas produtos ativos
         ...params
       }
     });
-    return response.data.items;
+    
+    return response.data.itens.filter(product => product.situacao === 'A');
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;

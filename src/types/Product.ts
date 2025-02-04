@@ -1,11 +1,19 @@
+export interface ProductPrices {
+  preco: number;
+  precoPromocional: number;
+  precoCusto: number;
+  precoCustoMedio: number;
+}
+
 export interface Product {
-  id: string;
-  codigo: string;
+  id: number;
+  sku: string;
   descricao: string;
-  preco: string;
-  estoque_atual: string;
+  tipo: string;
+  situacao: string;
   dataCriacao: string;
   dataAlteracao: string;
+  unidade: string;
   gtin?: string;
-  situacao?: string;
+  precos: ProductPrices;
 }

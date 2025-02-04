@@ -32,11 +32,17 @@ exports.handler = async (event) => {
       };
     }
 
+    // Adiciona o parâmetro situacao=A para buscar apenas produtos ativos
+    const params = {
+      ...event.queryStringParameters,
+      situacao: 'A'
+    };
+
     const response = await axios.get('https://api.tiny.com.br/public-api/v3/produtos', {
       headers: {
         Authorization: token
       },
-      params: event.queryStringParameters
+      params
     });
 
     return {
