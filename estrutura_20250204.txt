@@ -1,0 +1,47 @@
+C:.
+|   .env.example
+|   .gitignore
+|   eslint.config.js
+|   index.html
+|   netlify.toml
+|   package-lock.json
+|   package.json
+|   postcss.config.js
+|   server.js
+|   tailwind.config.js
+|   tsconfig.app.json
+|   tsconfig.json
+|   tsconfig.node.json
+|   vite.config.ts
+|   
++---dist
+|   |   index.html
+|   |   
+|   \---assets
+|           index-5-aSek94.css
+|           index-ClM1N0Tr.js
+|           
++---netlify
+|   \---functions
+|           tiny-api.js
+|           tiny-auth.js
+|           tiny-product-details.js
+|           tiny-products.js
+|           
+\---src
+    |   App.tsx
+    |   index.css
+    |   main.tsx
+    |   vite-env.d.ts
+    |   
+    +---components
+    |       ConfigForm.tsx
+    |       ProductCard.tsx
+    |       ProductGrid.tsx
+    |       
+    +---services
+    |       api.ts
+    |       
+    \---types
+            Product.ts
+            
