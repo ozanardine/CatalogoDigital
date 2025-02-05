@@ -7,7 +7,7 @@ interface AuthTokens {
   expires_in: number;
 }
 
-interface ProductsResponse {
+export interface ProductsResponse {
   itens: Product[];
   paginacao: {
     limit: number;
@@ -32,35 +32,48 @@ export const refreshAccessToken = async (refreshToken: string): Promise<AuthToke
   return response.data;
 };
 
-export const fetchProducts = async (accessToken: string, params = {}) => {
+export const fetchProducts = async (accessToken: string, offset = 0, limit = 20) => {
   try {
     const response = await axios.get<ProductsResponse>('/.netlify/functions/tiny-products', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
       params: {
-        limit: 100,
-        situacao: 'A',
-        ...params
+        limit,
+        offset,
+        situacao: 'A'
       }
     });
     
-    // Busca os detalhes de cada produto
-    const productsWithDetails = await Promise.all(
-      response.data.itens.map(async (product) => {
-        const details = await axios.get(`/.netlify/functions/tiny-product-details`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          },
-          params: {
-            id: product.id
-          }
-        });
-        return details.data;
-      })
-    );
+    // Busca os detalhes dos produtos em lotes de 5 para evitar muitas requisições simultâneas
+    const productsWithDetails = [];
+    for (let i = 0; i < response.data.itens.length; i += 5) {
+      const batch = response.data.itens.slice(i, i + 5);
+      const detailsBatch = await Promise.all(
+        batch.map(async (product) => {
+          const details = await axios.get(`/.netlify/functions/tiny-product-details`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            },
+            params: {
+              id: product.id
+            }
+          });
+          return details.data;
+        })
+      );
+      productsWithDetails.push(...detailsBatch);
+      
+      // Pequeno delay entre os lotes para evitar sobrecarga
+      if (i + 5 < response.data.itens.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
     
-    return productsWithDetails.filter(product => product.situacao === 'A');
+    return {
+      products: productsWithDetails.filter(product => product.situacao === 'A'),
+      pagination: response.data.paginacao
+    };
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;

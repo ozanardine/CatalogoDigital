@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useInfiniteQuery } from 'react-query';
 import { ProductGrid } from './components/ProductGrid';
 import { Search, Settings } from 'lucide-react';
 import { fetchProducts, getAuthTokens, refreshAccessToken } from './services/api';
+import type { Product } from './types/Product';
 
 function App() {
   const [tokens, setTokens] = useState(() => {
@@ -12,7 +13,6 @@ function App() {
   const [isConfiguring, setIsConfiguring] = useState(!tokens);
 
   useEffect(() => {
-    // Verificar código de autorização na URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     
@@ -22,7 +22,6 @@ function App() {
           setTokens(newTokens);
           localStorage.setItem('tiny_tokens', JSON.stringify(newTokens));
           setIsConfiguring(false);
-          // Limpar a URL
           window.history.replaceState({}, document.title, window.location.pathname);
         })
         .catch(error => {
@@ -34,8 +33,7 @@ function App() {
 
   useEffect(() => {
     if (tokens) {
-      // Configurar refresh token automático
-      const timeUntilExpiry = (tokens.expires_in - 300) * 1000; // 5 minutos antes de expirar
+      const timeUntilExpiry = (tokens.expires_in - 300) * 1000;
       const refreshTimer = setTimeout(async () => {
         try {
           const newTokens = await refreshAccessToken(tokens.refresh_token);
@@ -51,11 +49,26 @@ function App() {
     }
   }, [tokens]);
 
-  const { data: products, isLoading, error } = useQuery(
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isLoading,
+    isFetchingNextPage,
+    error
+  } = useInfiniteQuery(
     ['products', tokens?.access_token],
-    () => fetchProducts(tokens?.access_token),
+    async ({ pageParam = 0 }) => {
+      if (!tokens?.access_token) throw new Error('No access token');
+      return fetchProducts(tokens.access_token, pageParam);
+    },
     {
       enabled: !!tokens?.access_token,
+      getNextPageParam: (lastPage, pages) => {
+        const { pagination } = lastPage;
+        const nextOffset = pagination.offset + pagination.limit;
+        return nextOffset < pagination.total ? nextOffset : undefined;
+      },
       staleTime: 1000 * 60 * 5, // 5 minutos
     }
   );
@@ -72,6 +85,8 @@ function App() {
     const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid&response_type=code`;
     window.location.href = authUrl;
   };
+
+  const allProducts = data?.pages.flatMap(page => page.products) ?? [];
 
   if (isConfiguring) {
     return (
@@ -122,13 +137,15 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ProductGrid
-          products={products || []}
-          isLoading={isLoading}
+          products={allProducts}
+          isLoading={isLoading || isFetchingNextPage}
           error={error as Error}
+          hasMore={!!hasNextPage}
+          onLoadMore={() => fetchNextPage()}
         />
       </main>
     </div>
   );
 }
 
-export default App;
+export default App
