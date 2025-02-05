@@ -7,6 +7,12 @@ interface AuthTokens {
   expires_in: number;
 }
 
+interface TinyConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
 export interface ProductsResponse {
   itens: Product[];
   paginacao: {
@@ -16,18 +22,23 @@ export interface ProductsResponse {
   };
 }
 
-export const getAuthTokens = async (code: string): Promise<AuthTokens> => {
+export const getAuthTokens = async (code: string, config: TinyConfig): Promise<AuthTokens> => {
   const response = await axios.post('/.netlify/functions/tiny-auth', {
     grant_type: 'authorization_code',
-    code
+    code,
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    redirect_uri: config.redirectUri
   });
   return response.data;
 };
 
-export const refreshAccessToken = async (refreshToken: string): Promise<AuthTokens> => {
+export const refreshAccessToken = async (refreshToken: string, config: TinyConfig): Promise<AuthTokens> => {
   const response = await axios.post('/.netlify/functions/tiny-auth', {
     grant_type: 'refresh_token',
-    refresh_token: refreshToken
+    refresh_token: refreshToken,
+    client_id: config.clientId,
+    client_secret: config.clientSecret
   });
   return response.data;
 };

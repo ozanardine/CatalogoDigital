@@ -1,23 +1,36 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useInfiniteQuery } from 'react-query';
 import { ProductGrid } from './components/ProductGrid';
+import { ConfigForm } from './components/ConfigForm';
 import { Search, Settings } from 'lucide-react';
 import { fetchProducts, getAuthTokens, refreshAccessToken } from './services/api';
 import type { Product } from './types/Product';
+
+interface TinyConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
 
 function App() {
   const [tokens, setTokens] = useState(() => {
     const saved = localStorage.getItem('tiny_tokens');
     return saved ? JSON.parse(saved) : null;
   });
-  const [isConfiguring, setIsConfiguring] = useState(!tokens);
+
+  const [config, setConfig] = useState<TinyConfig | null>(() => {
+    const saved = localStorage.getItem('tiny_config');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [isConfiguring, setIsConfiguring] = useState(!tokens || !config);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     
-    if (code && !tokens) {
-      getAuthTokens(code)
+    if (code && !tokens && config) {
+      getAuthTokens(code, config)
         .then(newTokens => {
           setTokens(newTokens);
           localStorage.setItem('tiny_tokens', JSON.stringify(newTokens));
@@ -29,14 +42,14 @@ function App() {
           setIsConfiguring(true);
         });
     }
-  }, [tokens]);
+  }, [tokens, config]);
 
   useEffect(() => {
-    if (tokens) {
+    if (tokens && config) {
       const timeUntilExpiry = (tokens.expires_in - 300) * 1000;
       const refreshTimer = setTimeout(async () => {
         try {
-          const newTokens = await refreshAccessToken(tokens.refresh_token);
+          const newTokens = await refreshAccessToken(tokens.refresh_token, config);
           setTokens(newTokens);
           localStorage.setItem('tiny_tokens', JSON.stringify(newTokens));
         } catch (error) {
@@ -47,7 +60,7 @@ function App() {
 
       return () => clearTimeout(refreshTimer);
     }
-  }, [tokens]);
+  }, [tokens, config]);
 
   const {
     data,
@@ -73,17 +86,20 @@ function App() {
     }
   );
 
-  const handleLogin = () => {
-    const clientId = import.meta.env.VITE_TINY_CLIENT_ID;
-    const redirectUri = import.meta.env.VITE_REDIRECT_URI;
+  const handleConfigSave = (newConfig: TinyConfig) => {
+    localStorage.setItem('tiny_config', JSON.stringify(newConfig));
+    setConfig(newConfig);
     
-    if (!clientId || !redirectUri) {
-      console.error('Missing environment variables:', { clientId, redirectUri });
-      return;
-    }
-    
-    const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid&response_type=code`;
+    const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${newConfig.clientId}&redirect_uri=${newConfig.redirectUri}&scope=openid&response_type=code`;
     window.location.href = authUrl;
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem('tiny_tokens');
+    localStorage.removeItem('tiny_config');
+    setTokens(null);
+    setConfig(null);
+    setIsConfiguring(true);
   };
 
   const allProducts = data?.pages.flatMap(page => page.products) ?? [];
@@ -91,19 +107,13 @@ function App() {
   if (isConfiguring) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-          <div className="flex items-center gap-3 mb-6">
-            <Settings className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Configuração Inicial</h1>
-          </div>
-          
-          <button
-            onClick={handleLogin}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Conectar com Tiny ERP
-          </button>
-        </div>
+        <ConfigForm
+          onSave={handleConfigSave}
+          defaultValues={config ? {
+            clientId: config.clientId,
+            redirectUri: config.redirectUri
+          } : undefined}
+        />
       </div>
     );
   }
@@ -115,13 +125,21 @@ function App() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Catálogo de Produtos</h1>
             
-            <button
-              onClick={() => setIsConfiguring(true)}
-              className="text-gray-600 hover:text-gray-900"
-              title="Configurações"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleReset}
+                className="text-gray-600 hover:text-gray-900 text-sm"
+              >
+                Trocar Conta
+              </button>
+              <button
+                onClick={() => setIsConfiguring(true)}
+                className="text-gray-600 hover:text-gray-900"
+                title="Configurações"
+              >
+                <Settings className="w-6 h-6" />
+              </button>
+            </div>
           </div>
           
           <div className="mt-4 relative">

@@ -22,16 +22,16 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { code, grant_type, refresh_token } = body;
+    const { code, grant_type, refresh_token, client_id, client_secret, redirect_uri } = body;
 
     const params = new URLSearchParams();
-    params.append('client_id', process.env.VITE_TINY_CLIENT_ID);
-    params.append('client_secret', process.env.VITE_TINY_CLIENT_SECRET);
+    params.append('client_id', client_id);
+    params.append('client_secret', client_secret);
 
     if (grant_type === 'authorization_code') {
       params.append('grant_type', 'authorization_code');
       params.append('code', code);
-      params.append('redirect_uri', process.env.VITE_REDIRECT_URI);
+      params.append('redirect_uri', redirect_uri);
     } else if (grant_type === 'refresh_token') {
       params.append('grant_type', 'refresh_token');
       params.append('refresh_token', refresh_token);
